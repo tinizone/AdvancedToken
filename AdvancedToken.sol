@@ -5,8 +5,11 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 
 contract AdvancedToken is Initializable, ERC20Upgradeable, AccessControlUpgradeable, UUPSUpgradeable, PausableUpgradeable {
+    using Strings for uint256;
+
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
 
@@ -14,23 +17,24 @@ contract AdvancedToken is Initializable, ERC20Upgradeable, AccessControlUpgradea
     uint256 public burnRate;
     address public feeRecipient;
     uint256 public accumulatedFees;
-    uint256 public constant FEE_DENOMINATOR = 10000;
-    uint256 public constant MAX_SUPPLY = 1000000 * 1e18;
+    string public metadata; // Metadata dạng JSON
 
-    address public stakingModule;
-    address public nftStakingModule;
-    address public vestingModule;
+    uint256 private constant FEE_DENOMINATOR = 10000;
+    uint256 private constant MAX_SUPPLY = 1000000 * 1e18;
 
     event TransferFeeUpdated(uint256 newFee);
     event BurnRateUpdated(uint256 newRate);
     event FeesWithdrawn(address indexed recipient, uint256 amount);
+    event MetadataUpdated(string newMetadata);
 
+    // Khởi tạo với các giá trị thô
     function initialize(
         string memory _name,
         string memory _symbol,
         uint256 _totalSupply,
         address _admin,
-        address _feeRecipient
+        string memory _logoURI, // URL logo
+        string memory _description // Mô tả
     ) public initializer {
         __ERC20_init(_name, _symbol);
         __AccessControl_init();
@@ -43,28 +47,27 @@ contract AdvancedToken is Initializable, ERC20Upgradeable, AccessControlUpgradea
 
         _mint(_admin, _totalSupply);
         transferFee = 100; // 1%
-        burnRate = 50; // 0.5%
-        feeRecipient = _feeRecipient;
+        burnRate = 50;    // 0.5%
+        feeRecipient = _admin;
+
+        // Tạo metadata từ các giá trị thô
+        metadata = string(
+            abi.encodePacked(
+                "{\"name\":\"", _name,
+                "\",\"symbol\":\"", _symbol,
+                "\",\"logoURI\":\"", _logoURI,
+                "\",\"description\":\"", _description, "\"}"
+            )
+        );
     }
 
-    function setStakingModule(address _stakingModule) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        stakingModule = _stakingModule;
-    }
-
-    function setNFTStakingModule(address _nftStakingModule) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        nftStakingModule = _nftStakingModule;
-    }
-
-    function setVestingModule(address _vestingModule) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        vestingModule = _vestingModule;
-    }
-
-    function transfer(address recipient, uint256 amount) public virtual override whenNotPaused returns (bool) {
+    // Chuyển nhượng
+    function transfer(address recipient, uint256 amount) public override whenNotPaused returns (bool) {
         _customTransfer(_msgSender(), recipient, amount);
         return true;
     }
 
-    function transferFrom(address sender, address recipient, uint256 amount) public virtual override whenNotPaused returns (bool) {
+    function transferFrom(address sender, address recipient, uint256 amount) public override whenNotPaused returns (bool) {
         _customTransfer(sender, recipient, amount);
         uint256 currentAllowance = allowance(sender, _msgSender());
         _approve(sender, _msgSender(), currentAllowance - amount);
@@ -87,6 +90,7 @@ contract AdvancedToken is Initializable, ERC20Upgradeable, AccessControlUpgradea
         super._transfer(sender, recipient, netAmount);
     }
 
+    // Rút phí
     function withdrawFees() external onlyRole(DEFAULT_ADMIN_ROLE) whenNotPaused {
         uint256 amount = accumulatedFees;
         require(amount > 0, "No fees to withdraw");
@@ -95,16 +99,46 @@ contract AdvancedToken is Initializable, ERC20Upgradeable, AccessControlUpgradea
         emit FeesWithdrawn(feeRecipient, amount);
     }
 
+    // Cập nhật metadata với giá trị thô
+    function setMetadata(
+        string memory _logoURI,
+        string memory _description
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        metadata = string(
+            abi.encodePacked(
+                "{\"name\":\"", name(),
+                "\",\"symbol\":\"", symbol(),
+                "\",\"logoURI\":\"", _logoURI,
+                "\",\"description\":\"", _description, "\"}"
+            )
+        );
+        emit MetadataUpdated(metadata);
+    }
+
+    // Cấp quyền
+    function grantRoleSimple(address user, string memory roleName) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        bytes32 role = keccak256(abi.encodePacked(roleName));
+        _grantRole(role, user);
+    }
+
+    // Đổi địa chỉ nhận phí
+    function setFeeRecipient(address _feeRecipient) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        feeRecipient = _feeRecipient;
+    }
+
+    // Đổi phí chuyển nhượng
     function setTransferFee(uint256 _fee) external onlyRole(DEFAULT_ADMIN_ROLE) {
         transferFee = _fee;
         emit TransferFeeUpdated(_fee);
     }
 
+    // Đổi tỷ lệ đốt
     function setBurnRate(uint256 _rate) external onlyRole(DEFAULT_ADMIN_ROLE) {
         burnRate = _rate;
         emit BurnRateUpdated(_rate);
     }
 
+    // Tạm dừng và mở khóa
     function pause() external onlyRole(PAUSER_ROLE) {
         _pause();
     }
@@ -113,5 +147,6 @@ contract AdvancedToken is Initializable, ERC20Upgradeable, AccessControlUpgradea
         _unpause();
     }
 
-    function _authorizeUpgrade(address) internal override onlyRole(UPGRADER_ROLE) {}
+    // Nâng cấp
+    function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER_ROLE) {}
 }
