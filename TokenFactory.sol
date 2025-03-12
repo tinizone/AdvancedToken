@@ -2,28 +2,46 @@
 pragma solidity ^0.8.20;
 
 import "./AdvancedToken.sol";
+import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract TokenFactory {
     event TokenDeployed(address indexed tokenAddress);
 
-    // Triển khai AdvancedToken với CREATE2
+    address public advancedTokenImplementation;
+
+    constructor() {
+        advancedTokenImplementation = address(new AdvancedToken());
+    }
+
+    // Triển khai token với giá trị thô
     function deployToken(
         uint256 salt,
         string memory name,
         string memory symbol,
         uint256 totalSupply,
         address admin,
-        address feeRecipient
+        string memory logoURI, // URL logo
+        string memory description // Mô tả
     ) external returns (address) {
-        AdvancedToken token = new AdvancedToken{salt: bytes32(salt)}();
-        token.initialize(name, symbol, totalSupply, admin, feeRecipient);
-        emit TokenDeployed(address(token));
-        return address(token);
+        ERC1967Proxy proxy = new ERC1967Proxy{salt: bytes32(salt)}(
+            advancedTokenImplementation,
+            abi.encodeWithSelector(
+                AdvancedToken.initialize.selector,
+                name,
+                symbol,
+                totalSupply,
+                admin,
+                logoURI,
+                description
+            )
+        );
+        emit TokenDeployed(address(proxy));
+        return address(proxy);
     }
 
-    // Dự đoán địa chỉ trước khi triển khai
+    // Dự đoán địa chỉ
     function predictAddress(uint256 salt) external view returns (address) {
-        bytes memory bytecode = type(AdvancedToken).creationCode;
+        bytes memory bytecode = type(ERC1967Proxy).creationCode;
         bytes32 hash = keccak256(
             abi.encodePacked(
                 bytes1(0xff),
