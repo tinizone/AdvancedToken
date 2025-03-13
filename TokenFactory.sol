@@ -5,7 +5,7 @@ import "./AdvancedToken.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract TokenFactory {
-    // Khai báo event (không có emit ở đây, chỉ định nghĩa)
+    // Khai báo event
     event TokenDeployed(
         address indexed tokenAddress,
         uint256 salt,
@@ -66,20 +66,47 @@ contract TokenFactory {
             description
         );
 
-        // Phát event (dùng emit ở đây, kết thúc bằng ;)
         emit TokenDeployed(address(proxy), salt, name, symbol, totalSupply, admin, logoURI, description);
 
         return address(proxy);
     }
 
-    function predictAddress(uint256 salt) external view returns (address) {
-        bytes memory bytecode = type(ERC1967Proxy).creationCode;
+    function predictAddress(
+        uint256 salt,
+        string memory name,
+        string memory symbol,
+        uint256 totalSupply,
+        address admin,
+        string memory logoURI,
+        string memory description
+    ) external view returns (address) {
+        // Lấy bytecode cơ bản của ERC1967Proxy
+        bytes memory proxyBytecode = type(ERC1967Proxy).creationCode;
+
+        // Tạo dữ liệu khởi tạo (constructor arguments)
+        bytes memory initData = abi.encodeWithSelector(
+            AdvancedToken.initialize.selector,
+            name,
+            symbol,
+            totalSupply,
+            admin,
+            logoURI,
+            description
+        );
+
+        // Nối bytecode với constructor arguments
+        bytes memory fullBytecode = abi.encodePacked(
+            proxyBytecode,
+            abi.encode(advancedTokenImplementation, initData)
+        );
+
+        // Tính hash theo CREATE2
         bytes32 hash = keccak256(
             abi.encodePacked(
                 bytes1(0xff),
                 address(this),
                 bytes32(salt),
-                keccak256(bytecode)
+                keccak256(fullBytecode)
             )
         );
         return address(uint160(uint(hash)));
