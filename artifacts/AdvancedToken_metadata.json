@@ -245,6 +245,19 @@
 				"inputs": [
 					{
 						"indexed": false,
+						"internalType": "string",
+						"name": "newMetadata",
+						"type": "string"
+					}
+				],
+				"name": "MetadataUpdated",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": false,
 						"internalType": "address",
 						"name": "account",
 						"type": "address"
@@ -393,6 +406,19 @@
 				"type": "event"
 			},
 			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "newImplementation",
+						"type": "address"
+					}
+				],
+				"name": "Upgraded",
+				"type": "event"
+			},
+			{
 				"inputs": [],
 				"name": "DEFAULT_ADMIN_ROLE",
 				"outputs": [
@@ -400,32 +426,6 @@
 						"internalType": "bytes32",
 						"name": "",
 						"type": "bytes32"
-					}
-				],
-				"stateMutability": "view",
-				"type": "function"
-			},
-			{
-				"inputs": [],
-				"name": "FEE_DENOMINATOR",
-				"outputs": [
-					{
-						"internalType": "uint256",
-						"name": "",
-						"type": "uint256"
-					}
-				],
-				"stateMutability": "view",
-				"type": "function"
-			},
-			{
-				"inputs": [],
-				"name": "MAX_SUPPLY",
-				"outputs": [
-					{
-						"internalType": "uint256",
-						"name": "",
-						"type": "uint256"
 					}
 				],
 				"stateMutability": "view",
@@ -590,6 +590,19 @@
 				"type": "function"
 			},
 			{
+				"inputs": [],
+				"name": "getImplementationHistory",
+				"outputs": [
+					{
+						"internalType": "address[]",
+						"name": "",
+						"type": "address[]"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
 				"inputs": [
 					{
 						"internalType": "bytes32",
@@ -629,6 +642,24 @@
 			{
 				"inputs": [
 					{
+						"internalType": "address",
+						"name": "user",
+						"type": "address"
+					},
+					{
+						"internalType": "string",
+						"name": "roleName",
+						"type": "string"
+					}
+				],
+				"name": "grantRoleSimple",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
 						"internalType": "bytes32",
 						"name": "role",
 						"type": "bytes32"
@@ -645,6 +676,25 @@
 						"internalType": "bool",
 						"name": "",
 						"type": "bool"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"name": "implementationHistory",
+				"outputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
 					}
 				],
 				"stateMutability": "view",
@@ -673,9 +723,14 @@
 						"type": "address"
 					},
 					{
-						"internalType": "address",
-						"name": "_feeRecipient",
-						"type": "address"
+						"internalType": "string",
+						"name": "_logoURI",
+						"type": "string"
+					},
+					{
+						"internalType": "string",
+						"name": "_description",
+						"type": "string"
 					}
 				],
 				"name": "initialize",
@@ -685,7 +740,7 @@
 			},
 			{
 				"inputs": [],
-				"name": "name",
+				"name": "metadata",
 				"outputs": [
 					{
 						"internalType": "string",
@@ -698,12 +753,12 @@
 			},
 			{
 				"inputs": [],
-				"name": "nftStakingModule",
+				"name": "name",
 				"outputs": [
 					{
-						"internalType": "address",
+						"internalType": "string",
 						"name": "",
-						"type": "address"
+						"type": "string"
 					}
 				],
 				"stateMutability": "view",
@@ -795,11 +850,11 @@
 				"inputs": [
 					{
 						"internalType": "address",
-						"name": "_nftStakingModule",
+						"name": "_feeRecipient",
 						"type": "address"
 					}
 				],
-				"name": "setNFTStakingModule",
+				"name": "setFeeRecipient",
 				"outputs": [],
 				"stateMutability": "nonpayable",
 				"type": "function"
@@ -807,12 +862,17 @@
 			{
 				"inputs": [
 					{
-						"internalType": "address",
-						"name": "_stakingModule",
-						"type": "address"
+						"internalType": "string",
+						"name": "_logoURI",
+						"type": "string"
+					},
+					{
+						"internalType": "string",
+						"name": "_description",
+						"type": "string"
 					}
 				],
-				"name": "setStakingModule",
+				"name": "setMetadata",
 				"outputs": [],
 				"stateMutability": "nonpayable",
 				"type": "function"
@@ -828,32 +888,6 @@
 				"name": "setTransferFee",
 				"outputs": [],
 				"stateMutability": "nonpayable",
-				"type": "function"
-			},
-			{
-				"inputs": [
-					{
-						"internalType": "address",
-						"name": "_vestingModule",
-						"type": "address"
-					}
-				],
-				"name": "setVestingModule",
-				"outputs": [],
-				"stateMutability": "nonpayable",
-				"type": "function"
-			},
-			{
-				"inputs": [],
-				"name": "stakingModule",
-				"outputs": [
-					{
-						"internalType": "address",
-						"name": "",
-						"type": "address"
-					}
-				],
-				"stateMutability": "view",
 				"type": "function"
 			},
 			{
@@ -994,19 +1028,6 @@
 			},
 			{
 				"inputs": [],
-				"name": "vestingModule",
-				"outputs": [
-					{
-						"internalType": "address",
-						"name": "",
-						"type": "address"
-					}
-				],
-				"stateMutability": "view",
-				"type": "function"
-			},
-			{
-				"inputs": [],
 				"name": "withdrawFees",
 				"outputs": [],
 				"stateMutability": "nonpayable",
@@ -1142,9 +1163,6 @@
 				},
 				"Unpaused(address)": {
 					"details": "Emitted when the pause is lifted by `account`."
-				},
-				"Upgraded(address)": {
-					"details": "Emitted when the implementation is upgraded."
 				}
 			},
 			"kind": "dev",
@@ -1359,12 +1377,28 @@
 				"dweb:/ipfs/QmQ7iH2keLNUKgq2xSWcRmuBE5eZ3F5whYAkAGzCNNoEWB"
 			]
 		},
+		"@openzeppelin/contracts/utils/Panic.sol": {
+			"keccak256": "0xf7fe324703a64fc51702311dc51562d5cb1497734f074e4f483bfb6717572d7a",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://c6a5ff4f9fd8649b7ee20800b7fa387d3465bd77cf20c2d1068cd5c98e1ed57a",
+				"dweb:/ipfs/QmVSaVJf9FXFhdYEYeCEfjMVHrxDh5qL4CGkxdMWpQCrqG"
+			]
+		},
 		"@openzeppelin/contracts/utils/StorageSlot.sol": {
 			"keccak256": "0xcf74f855663ce2ae00ed8352666b7935f6cddea2932fdf2c3ecd30a9b1cd0e97",
 			"license": "MIT",
 			"urls": [
 				"bzz-raw://9f660b1f351b757dfe01438e59888f31f33ded3afcf5cb5b0d9bf9aa6f320a8b",
 				"dweb:/ipfs/QmarDJ5hZEgBtCmmrVzEZWjub9769eD686jmzb2XpSU1cM"
+			]
+		},
+		"@openzeppelin/contracts/utils/Strings.sol": {
+			"keccak256": "0x44f87e91783e88415bde66f1a63f6c7f0076f2d511548820407d5c95643ac56c",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://13a51bc2b23827744dcf5bad10c69e72528cf015a6fe48c93632cdb2c0eb1251",
+				"dweb:/ipfs/QmZwPA47Yqgje1qtkdEFEja8ntTahMStYzKf5q3JRnaR7d"
 			]
 		},
 		"@openzeppelin/contracts/utils/introspection/IERC165.sol": {
@@ -1375,12 +1409,36 @@
 				"dweb:/ipfs/QmfDRc7pxfaXB2Dh9np5Uf29Na3pQ7tafRS684wd3GLjVL"
 			]
 		},
-		"AdvancedToken.sol": {
-			"keccak256": "0x2c8097d925d9e23e84ced116e354a95c993096c212db594029f768b6f8794693",
+		"@openzeppelin/contracts/utils/math/Math.sol": {
+			"keccak256": "0xa00be322d7db5786750ce0ac7e2f5b633ac30a5ed5fa1ced1e74acfc19acecea",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://e1006acf020afd88173a557dba628eadafff0e1e538a4595f20ba59e84e0fe2c",
-				"dweb:/ipfs/QmSVEEqnipaWYgJ38oh78u9m5kNBQpkr99Zr6cqJM5YjXF"
+				"bzz-raw://6c84e822f87cbdc4082533b626667b6928715bb2b1e8e7eb96954cebb9e38c8d",
+				"dweb:/ipfs/QmZmy9dgxLTerBAQDuuHqbL6EpgRxddqgv5KmwpXYVbKz1"
+			]
+		},
+		"@openzeppelin/contracts/utils/math/SafeCast.sol": {
+			"keccak256": "0x195533c86d0ef72bcc06456a4f66a9b941f38eb403739b00f21fd7c1abd1ae54",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://b1d578337048cad08c1c03041cca5978eff5428aa130c781b271ad9e5566e1f8",
+				"dweb:/ipfs/QmPFKL2r9CBsMwmUqqdcFPfHZB2qcs9g1HDrPxzWSxomvy"
+			]
+		},
+		"@openzeppelin/contracts/utils/math/SignedMath.sol": {
+			"keccak256": "0xb1970fac7b64e6c09611e6691791e848d5e3fe410fa5899e7df2e0afd77a99e3",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://db5fbb3dddd8b7047465b62575d96231ba8a2774d37fb4737fbf23340fabbb03",
+				"dweb:/ipfs/QmVUSvooZKEdEdap619tcJjTLcAuH6QBdZqAzWwnAXZAWJ"
+			]
+		},
+		"AdvancedToken.sol": {
+			"keccak256": "0x8d7043d22547a13de34c13fe7a9d95ffcd8aeed67ad8e7ae9ea05e122286a251",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://048f0c0de1ae31be5cbc494c616ba4b67d3e444ca85964865a3b6b6dbc26071a",
+				"dweb:/ipfs/QmaDuQv3EyE9AoDEMAviM2uKTxDP75d7wsgbWemukyYyKM"
 			]
 		}
 	},
