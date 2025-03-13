@@ -7,6 +7,16 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
+// Giao diện để kiểm tra UUPS
+interface IERC1967 {
+    function proxiableUUID() external view returns (bytes32);
+}
+
+// Giao diện để kiểm tra tính tương thích của AdvancedToken
+interface IAdvancedToken {
+    function getImplementationHistory() external view returns (address[] memory);
+}
+
 contract AdvancedToken is Initializable, ERC20Upgradeable, AccessControlUpgradeable, UUPSUpgradeable, PausableUpgradeable {
     using Strings for uint256;
 
@@ -138,9 +148,60 @@ contract AdvancedToken is Initializable, ERC20Upgradeable, AccessControlUpgradea
         _unpause();
     }
 
-    function _authorizeUpgrade (address newImplementation) internal override onlyRole(UPGRADER_ROLE) {
-        implementationHistory.push(newImplementation);
+    function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER_ROLE) {
+        // Kiểm tra xem newImplementation có phải là hợp đồng không
+        require(newImplementation != address(0), "Invalid implementation address");
+        uint256 size;
+        assembly {
+            size := extcodesize(newImplementation)
+        }
+        require(size > 0, "New implementation is not a contract");
+
+        // Kiểm tra proxiableUUID (đảm bảo newImplementation hỗ trợ UUPS)
+        try IERC1967(newImplementation).proxiableUUID() returns (bytes32 uuid) {
+            require(uuid == keccak256("eip1967.proxy.implementation"), "Invalid UUPS implementation");
+        } catch {
+            revert("New implementation does not support UUPS");
+        }
+
+        // Lưu implementation hiện tại trước khi nâng cấp
+        address currentImplementation;
+        assembly {
+            currentImplementation := sload(0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc)
+        }
+        implementationHistory.push(currentImplementation);
+
+        // Cập nhật implementation mới
+        assembly {
+            sstore(0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc, newImplementation)
+        }
         emit Upgraded(newImplementation);
+
+        // Kiểm tra sau nâng cấp
+        try IAdvancedToken(newImplementation).getImplementationHistory() returns (address[] memory) {
+            // Nếu thành công, tiếp tục
+        } catch {
+            // Nếu thất bại, quay lại implementation trước đó
+            assembly {
+                sstore(0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc, currentImplementation)
+            }
+            implementationHistory.pop();
+            revert("Upgrade failed: New implementation is not compatible");
+        }
+    }
+
+    function rollbackToPreviousImplementation() external onlyRole(UPGRADER_ROLE) {
+        require(implementationHistory.length > 1, "No previous implementation to rollback to");
+        address previousImplementation = implementationHistory[implementationHistory.length - 2];
+
+        // Xóa implementation hiện tại khỏi lịch sử
+        implementationHistory.pop();
+
+        // Quay lại implementation trước đó
+        assembly {
+            sstore(0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc, previousImplementation)
+        }
+        emit Upgraded(previousImplementation);
     }
 
     function getImplementationHistory() external view returns (address[] memory) {
