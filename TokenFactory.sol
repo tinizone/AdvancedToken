@@ -5,7 +5,17 @@ import "./AdvancedToken.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract TokenFactory {
-    event TokenDeployed(address indexed tokenAddress, uint256 salt, string name, string symbol, uint256 totalSupply, address admin, string logoURI, string description);
+    // Khai báo event (không có emit ở đây, chỉ định nghĩa)
+    event TokenDeployed(
+        address indexed tokenAddress,
+        uint256 salt,
+        string name,
+        string symbol,
+        uint256 totalSupply,
+        address admin,
+        string logoURI,
+        string description
+    );
 
     address public advancedTokenImplementation;
     mapping(address => TokenInfo) public tokenRegistry;
@@ -56,7 +66,9 @@ contract TokenFactory {
             description
         );
 
+        // Phát event (dùng emit ở đây, kết thúc bằng ;)
         emit TokenDeployed(address(proxy), salt, name, symbol, totalSupply, admin, logoURI, description);
+
         return address(proxy);
     }
 
