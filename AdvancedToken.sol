@@ -18,7 +18,7 @@ contract AdvancedToken is Initializable, ERC20Upgradeable, AccessControlUpgradea
     address public feeRecipient;
     uint256 public accumulatedFees;
     string public metadata;
-    address[] public implementationHistory; // Lưu lịch sử nâng cấp
+    address[] public implementationHistory;
 
     uint256 private constant FEE_DENOMINATOR = 10000;
     uint256 private constant MAX_SUPPLY = 1000000 * 1e18;
@@ -47,8 +47,8 @@ contract AdvancedToken is Initializable, ERC20Upgradeable, AccessControlUpgradea
         _grantRole(UPGRADER_ROLE, _admin);
 
         _mint(_admin, _totalSupply);
-        transferFee = 100;
-        burnRate = 50;
+        transferFee = 100; // 1%
+        burnRate = 50;    // 0.5%
         feeRecipient = _admin;
 
         metadata = string(
@@ -60,11 +60,44 @@ contract AdvancedToken is Initializable, ERC20Upgradeable, AccessControlUpgradea
             )
         );
 
-        // Lưu implementation ban đầu
         implementationHistory.push(address(this));
     }
 
-    // Các hàm transfer, withdrawFees, setFeeRecipient, setTransferFee, setBurnRate, pause, unpause không đổi...
+    function transfer(address recipient, uint256 amount) public override whenNotPaused returns (bool) {
+        _customTransfer(_msgSender(), recipient, amount);
+        return true;
+    }
+
+    function transferFrom(address sender, address recipient, uint256 amount) public override whenNotPaused returns (bool) {
+        _customTransfer(sender, recipient, amount);
+        uint256 currentAllowance = allowance(sender, _msgSender());
+        _approve(sender, _msgSender(), currentAllowance - amount);
+        return true;
+    }
+
+    function _customTransfer(address sender, address recipient, uint256 amount) internal {
+        require(amount > 0, "Amount must be greater than 0");
+        uint256 fee = (amount * transferFee) / FEE_DENOMINATOR;
+        uint256 burnAmount = (amount * burnRate) / FEE_DENOMINATOR;
+        uint256 netAmount = amount - fee - burnAmount;
+
+        if (fee > 0) {
+            super._transfer(sender, feeRecipient, fee);
+            accumulatedFees += fee;
+        }
+        if (burnAmount > 0) {
+            _burn(sender, burnAmount);
+        }
+        super._transfer(sender, recipient, netAmount);
+    }
+
+    function withdrawFees() external onlyRole(DEFAULT_ADMIN_ROLE) whenNotPaused {
+        uint256 amount = accumulatedFees;
+        require(amount > 0, "No fees to withdraw");
+        accumulatedFees = 0;
+        _transfer(address(this), feeRecipient, amount);
+        emit FeesWithdrawn(feeRecipient, amount);
+    }
 
     function setMetadata(string memory _logoURI, string memory _description) external onlyRole(DEFAULT_ADMIN_ROLE) {
         metadata = string(
@@ -83,12 +116,33 @@ contract AdvancedToken is Initializable, ERC20Upgradeable, AccessControlUpgradea
         _grantRole(role, user);
     }
 
+    function setFeeRecipient(address _feeRecipient) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        feeRecipient = _feeRecipient;
+    }
+
+    function setTransferFee(uint256 _fee) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        transferFee = _fee;
+        emit TransferFeeUpdated(_fee);
+    }
+
+    function setBurnRate(uint256 _rate) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        burnRate = _rate;
+        emit BurnRateUpdated(_rate);
+    }
+
+    function pause() external onlyRole(PAUSER_ROLE) {
+        _pause();
+    }
+
+    function unpause() external onlyRole(PAUSER_ROLE) {
+        _unpause();
+    }
+
     function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER_ROLE) {
-        implementationHistory.push(newImplementation); // Lưu lịch sử nâng cấp
+        implementationHistory.push(newImplementation);
         emit Upgraded(newImplementation);
     }
 
-    // Getter để lấy toàn bộ lịch sử implementation
     function getImplementationHistory() external view returns (address[] memory) {
         return implementationHistory;
     }
