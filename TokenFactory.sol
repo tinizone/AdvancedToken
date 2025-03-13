@@ -8,7 +8,7 @@ contract TokenFactory {
     event TokenDeployed(address indexed tokenAddress, uint256 salt, string name, string symbol, uint256 totalSupply, address admin, string logoURI, string description);
 
     address public advancedTokenImplementation;
-    mapping(address => TokenInfo) public tokenRegistry; // Lưu thông tin token
+    mapping(address => TokenInfo) public tokenRegistry;
 
     struct TokenInfo {
         uint256 salt;
@@ -46,7 +46,6 @@ contract TokenFactory {
             )
         );
 
-        // Lưu thông tin vào mapping
         tokenRegistry[address(proxy)] = TokenInfo(
             salt,
             name,
