@@ -5,23 +5,33 @@ import "./AdvancedToken.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract TokenFactory {
-    event TokenDeployed(address indexed tokenAddress);
+    event TokenDeployed(address indexed tokenAddress, uint256 salt, string name, string symbol, uint256 totalSupply, address admin, string logoURI, string description);
 
     address public advancedTokenImplementation;
+    mapping(address => TokenInfo) public tokenRegistry; // Lưu thông tin token
+
+    struct TokenInfo {
+        uint256 salt;
+        string name;
+        string symbol;
+        uint256 totalSupply;
+        address admin;
+        string logoURI;
+        string description;
+    }
 
     constructor() {
         advancedTokenImplementation = address(new AdvancedToken());
     }
 
-    // Triển khai token với giá trị thô
     function deployToken(
         uint256 salt,
         string memory name,
         string memory symbol,
         uint256 totalSupply,
         address admin,
-        string memory logoURI, // URL logo
-        string memory description // Mô tả
+        string memory logoURI,
+        string memory description
     ) external returns (address) {
         ERC1967Proxy proxy = new ERC1967Proxy{salt: bytes32(salt)}(
             advancedTokenImplementation,
@@ -35,11 +45,22 @@ contract TokenFactory {
                 description
             )
         );
-        emit TokenDeployed(address(proxy));
+
+        // Lưu thông tin vào mapping
+        tokenRegistry[address(proxy)] = TokenInfo(
+            salt,
+            name,
+            symbol,
+            totalSupply,
+            admin,
+            logoURI,
+            description
+        );
+
+        emit TokenDeployed(address(proxy), salt, name, symbol, totalSupply, admin, logoURI, description);
         return address(proxy);
     }
 
-    // Dự đoán địa chỉ
     function predictAddress(uint256 salt) external view returns (address) {
         bytes memory bytecode = type(ERC1967Proxy).creationCode;
         bytes32 hash = keccak256(
