@@ -7,8 +7,8 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
-// Giao diện để kiểm tra UUPS
-interface IERC1967 {
+// Giao diện để kiểm tra UUPS (sử dụng alias để tránh xung đột)
+interface MyIERC1967 {
     function proxiableUUID() external view returns (bytes32);
 }
 
@@ -158,7 +158,7 @@ contract AdvancedToken is Initializable, ERC20Upgradeable, AccessControlUpgradea
         require(size > 0, "New implementation is not a contract");
 
         // Kiểm tra proxiableUUID (đảm bảo newImplementation hỗ trợ UUPS)
-        try IERC1967(newImplementation).proxiableUUID() returns (bytes32 uuid) {
+        try MyIERC1967(newImplementation).proxiableUUID() returns (bytes32 uuid) {
             require(uuid == keccak256("eip1967.proxy.implementation"), "Invalid UUPS implementation");
         } catch {
             revert("New implementation does not support UUPS");
